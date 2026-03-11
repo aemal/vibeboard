@@ -57,9 +57,188 @@
         .object-handle.dragging {
             cursor: grabbing;
         }
+
+        .instance-selector {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .instance-selector.hidden {
+            display: none;
+        }
+
+        .selector-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .selector-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .selector-header h2 {
+            margin: 0 0 8px 0;
+            color: #333;
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .selector-header p {
+            margin: 0;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .instance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .instance-card {
+            border: 2px solid #e5e5e5;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+        }
+
+        .instance-card:hover {
+            border-color: #007AFF;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.15);
+        }
+
+        .instance-card.new {
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 180px;
+            color: #666;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .instance-card.new:hover {
+            border-color: #007AFF;
+            color: #007AFF;
+        }
+
+        .instance-thumbnail {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 4px;
+            background: #f5f5f5;
+            margin-bottom: 8px;
+        }
+
+        .instance-info h3 {
+            margin: 0 0 4px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .instance-info p {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .instance-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .btn-delete {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 11px;
+            cursor: pointer;
+        }
+
+        .btn-delete:hover {
+            background: #d70015;
+        }
+
+        .selector-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .btn-primary {
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            background: #0056D6;
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e5e5;
+        }
     </style>
 </head>
 <body>
+    <div id="instanceSelector" class="instance-selector hidden">
+        <div class="selector-panel">
+            <div class="selector-header">
+                <h2>Choose Whiteboard</h2>
+                <p>Select a saved whiteboard or create a new one</p>
+            </div>
+            <div id="instanceGrid" class="instance-grid">
+                <!-- Instances will be populated here -->
+            </div>
+            <div class="selector-buttons">
+                <button class="btn-secondary" onclick="createNewBoard()">New Board</button>
+                <button class="btn-primary" onclick="hideInstanceSelector()">Continue Without Loading</button>
+            </div>
+        </div>
+    </div>
     <canvas id="canvas"></canvas>
 
     <script>
@@ -122,7 +301,7 @@
                 if (!this.visible) return;
 
                 ctx.strokeStyle = this.color;
-                ctx.lineWidth = this.width / zoom;
+                ctx.lineWidth = this.width;
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
             }
@@ -165,7 +344,7 @@
             }
 
             containsPoint(x, y) {
-                const threshold = Math.max(5, this.width) / zoom;
+                const threshold = Math.max(5, this.width);
                 for (let i = 0; i < this.points.length - 1; i++) {
                     const p1 = this.points[i];
                     const p2 = this.points[i + 1];
@@ -236,7 +415,7 @@
 
             containsPoint(x, y) {
                 const distance = Math.sqrt(Math.pow(x - this.x, 2) + Math.pow(y - this.y, 2));
-                return Math.abs(distance - this.radius) <= Math.max(5, this.width) / zoom;
+                return Math.abs(distance - this.radius) <= Math.max(5, this.width);
             }
 
             draw(ctx) {
@@ -264,7 +443,7 @@
             }
 
             containsPoint(x, y) {
-                const threshold = Math.max(5, this.width) / zoom;
+                const threshold = Math.max(5, this.width);
                 return distanceToLineSegment(x, y, this.x, this.y, this.x2, this.y2) <= threshold;
             }
 
@@ -294,7 +473,7 @@
                 super.draw(ctx);
 
                 // Draw arrowhead
-                const headLength = 15 / zoom;
+                const headLength = 15;
                 const angle = Math.atan2(this.y2 - this.y, this.x2 - this.x);
 
                 ctx.beginPath();
@@ -338,7 +517,7 @@
                 if (!this.text) return;
 
                 ctx.fillStyle = this.color;
-                ctx.font = `${this.fontSize / zoom}px ${this.fontFamily}`;
+                ctx.font = `${this.fontSize}px ${this.fontFamily}`;
                 ctx.textBaseline = 'top';
                 ctx.fillText(this.text, this.x, this.y);
             }
@@ -539,10 +718,13 @@
 
             if (isDragging && (selectedObject || selectedObjects.length > 0)) {
                 const objectsToMove = selectedObjects.length > 0 ? selectedObjects : [selectedObject];
+                const referenceObject = selectedObject || selectedObjects[0];
 
-                if (selectedObject) {
-                    const deltaX = coords.x - (selectedObject.x + dragOffset.x);
-                    const deltaY = coords.y - (selectedObject.y + dragOffset.y);
+                if (referenceObject) {
+                    const newX = coords.x - dragOffset.x;
+                    const newY = coords.y - dragOffset.y;
+                    const deltaX = newX - referenceObject.x;
+                    const deltaY = newY - referenceObject.y;
 
                     for (const obj of objectsToMove) {
                         obj.move(deltaX, deltaY);
@@ -615,10 +797,11 @@
 
             textInputElement = document.createElement('textarea');
             textInputElement.className = 'text-input';
-            textInputElement.style.left = (x * zoom + panX * zoom) + 'px';
-            textInputElement.style.top = (y * zoom + panY * zoom) + 'px';
-            textInputElement.style.fontSize = '16px';
-            textInputElement.style.transform = `scale(${zoom})`;
+            const screenX = (x + panX) * zoom;
+            const screenY = (y + panY) * zoom;
+            textInputElement.style.left = screenX + 'px';
+            textInputElement.style.top = screenY + 'px';
+            textInputElement.style.fontSize = Math.max(12, 16 * zoom) + 'px';
             textInputElement.style.transformOrigin = 'top left';
 
             document.body.appendChild(textInputElement);
@@ -736,31 +919,22 @@
                 // Draw selection indicators
                 if (obj.selected) {
                     const bounds = obj.getBounds();
-                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                    ctx.scale(zoom, zoom);
-                    ctx.translate(panX, panY);
 
                     ctx.strokeStyle = '#007AFF';
-                    ctx.lineWidth = 2 / zoom;
-                    ctx.setLineDash([5 / zoom, 5 / zoom]);
-                    ctx.strokeRect(bounds.x - 5 / zoom, bounds.y - 5 / zoom,
-                                 bounds.width + 10 / zoom, bounds.height + 10 / zoom);
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(bounds.x - 5, bounds.y - 5,
+                                 bounds.width + 10, bounds.height + 10);
                     ctx.setLineDash([]);
-
-                    applyTransform();
                 }
             }
 
             // Draw multi-selection rectangle
             if (isMultiSelecting && window.currentMouseCoords) {
-                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                ctx.scale(zoom, zoom);
-                ctx.translate(panX, panY);
-
                 ctx.strokeStyle = '#007AFF';
                 ctx.fillStyle = 'rgba(0, 122, 255, 0.1)';
-                ctx.lineWidth = 1 / zoom;
-                ctx.setLineDash([3 / zoom, 3 / zoom]);
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
 
                 const rectX = Math.min(multiSelectStart.x, window.currentMouseCoords.x);
                 const rectY = Math.min(multiSelectStart.y, window.currentMouseCoords.y);
@@ -770,8 +944,6 @@
                 ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
                 ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
                 ctx.setLineDash([]);
-
-                applyTransform();
             }
 
             // Draw current text object if editing
@@ -821,6 +993,270 @@
             }
         }
 
+        async function createNewInstance() {
+            // Save current state before creating new instance
+            autoSave();
+
+            // Send message to main process to create new window
+            try {
+                if (window.electronAPI && window.electronAPI.createNewWindow) {
+                    await window.electronAPI.createNewWindow();
+                } else {
+                    // Fallback for development - open new browser window
+                    window.open(window.location.href, '_blank');
+                }
+            } catch (error) {
+                console.log('Creating new window...', error);
+                // Fallback to browser window if Electron IPC fails
+                window.open(window.location.href, '_blank');
+            }
+        }
+
+        // State management
+        let currentInstanceId = null;
+        let autoSaveInterval = null;
+
+        function generateInstanceId() {
+            return 'whiteboard_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function getCurrentState() {
+            const thumbnail = generateThumbnail();
+            return {
+                objects: objects.map(obj => ({
+                    ...obj,
+                    points: obj.points || undefined
+                })),
+                zoom: zoom,
+                panX: panX,
+                panY: panY,
+                timestamp: Date.now(),
+                thumbnail: thumbnail,
+                name: `Whiteboard ${new Date().toLocaleString()}`
+            };
+        }
+
+        function generateThumbnail() {
+            // Create a smaller canvas for thumbnail
+            const thumbCanvas = document.createElement('canvas');
+            const thumbCtx = thumbCanvas.getContext('2d');
+            thumbCanvas.width = 200;
+            thumbCanvas.height = 150;
+
+            // Save current state
+            const oldZoom = zoom;
+            const oldPanX = panX;
+            const oldPanY = panY;
+
+            // Calculate bounds of all objects
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            objects.forEach(obj => {
+                const bounds = obj.getBounds();
+                minX = Math.min(minX, bounds.x);
+                maxX = Math.max(maxX, bounds.x + bounds.width);
+                minY = Math.min(minY, bounds.y);
+                maxY = Math.max(maxY, bounds.y + bounds.height);
+            });
+
+            // Set up thumbnail viewport
+            const contentWidth = maxX - minX;
+            const contentHeight = maxY - minY;
+            const thumbZoom = Math.min(180 / Math.max(contentWidth, 1), 135 / Math.max(contentHeight, 1), 1);
+
+            thumbCtx.fillStyle = 'white';
+            thumbCtx.fillRect(0, 0, 200, 150);
+
+            thumbCtx.translate(100 - (minX + contentWidth/2) * thumbZoom, 75 - (minY + contentHeight/2) * thumbZoom);
+            thumbCtx.scale(thumbZoom, thumbZoom);
+
+            // Draw all objects to thumbnail
+            objects.forEach(obj => {
+                obj.draw(thumbCtx);
+            });
+
+            return thumbCanvas.toDataURL('image/jpeg', 0.7);
+        }
+
+        function saveState() {
+            if (!currentInstanceId) {
+                currentInstanceId = generateInstanceId();
+            }
+
+            const state = getCurrentState();
+            const savedStates = JSON.parse(localStorage.getItem('whiteboardStates') || '{}');
+            savedStates[currentInstanceId] = state;
+            localStorage.setItem('whiteboardStates', JSON.stringify(savedStates));
+        }
+
+        function loadState(instanceId) {
+            const savedStates = JSON.parse(localStorage.getItem('whiteboardStates') || '{}');
+            const state = savedStates[instanceId];
+
+            if (state) {
+                // Clear current state
+                objects = [];
+                deselectAll();
+
+                // Load objects
+                state.objects.forEach(objData => {
+                    let obj;
+                    switch (objData.type) {
+                        case 'pen':
+                            obj = new PenStroke(objData.x, objData.y, objData.points);
+                            break;
+                        case 'rectangle':
+                            obj = new Rectangle(objData.x, objData.y, objData.rectWidth, objData.rectHeight);
+                            break;
+                        case 'circle':
+                            obj = new Circle(objData.x, objData.y, objData.radius);
+                            break;
+                        case 'line':
+                            obj = new Line(objData.x, objData.y, objData.x2, objData.y2);
+                            break;
+                        case 'arrow':
+                            obj = new Arrow(objData.x, objData.y, objData.x2, objData.y2);
+                            break;
+                        case 'text':
+                            obj = new TextObject(objData.x, objData.y, objData.text, objData.fontSize);
+                            break;
+                    }
+
+                    if (obj) {
+                        obj.color = objData.color;
+                        obj.width = objData.width;
+                        objects.push(obj);
+                    }
+                });
+
+                // Restore viewport
+                zoom = state.zoom || 1;
+                panX = state.panX || 0;
+                panY = state.panY || 0;
+
+                currentInstanceId = instanceId;
+                redrawCanvas();
+            }
+        }
+
+        function autoSave() {
+            if (objects.length > 0) {
+                saveState();
+            }
+        }
+
+        function getSavedStates() {
+            return JSON.parse(localStorage.getItem('whiteboardStates') || '{}');
+        }
+
+        function deleteState(instanceId) {
+            const savedStates = JSON.parse(localStorage.getItem('whiteboardStates') || '{}');
+            delete savedStates[instanceId];
+            localStorage.setItem('whiteboardStates', JSON.stringify(savedStates));
+        }
+
+        // Instance Selector UI Functions
+        function showInstanceSelector() {
+            const selector = document.getElementById('instanceSelector');
+            selector.classList.remove('hidden');
+            populateInstanceGrid();
+        }
+
+        function hideInstanceSelector() {
+            const selector = document.getElementById('instanceSelector');
+            selector.classList.add('hidden');
+        }
+
+        function populateInstanceGrid() {
+            const grid = document.getElementById('instanceGrid');
+            const savedStates = getSavedStates();
+
+            grid.innerHTML = '';
+
+            // Add "New Board" card
+            const newCard = document.createElement('div');
+            newCard.className = 'instance-card new';
+            newCard.innerHTML = '+ New Whiteboard';
+            newCard.onclick = createNewBoard;
+            grid.appendChild(newCard);
+
+            // Add saved instances
+            Object.entries(savedStates)
+                .sort((a, b) => b[1].timestamp - a[1].timestamp)
+                .forEach(([instanceId, state]) => {
+                    const card = document.createElement('div');
+                    card.className = 'instance-card';
+
+                    card.innerHTML = `
+                        <img class="instance-thumbnail" src="${state.thumbnail}" alt="Thumbnail" />
+                        <div class="instance-info">
+                            <h3>${state.name}</h3>
+                            <p>${new Date(state.timestamp).toLocaleDateString()} • ${state.objects.length} objects</p>
+                        </div>
+                        <div class="instance-actions">
+                            <button class="btn-delete" onclick="event.stopPropagation(); deleteStateAndRefresh('${instanceId}')">Delete</button>
+                        </div>
+                    `;
+
+                    card.onclick = () => {
+                        loadState(instanceId);
+                        hideInstanceSelector();
+                    };
+
+                    grid.appendChild(card);
+                });
+        }
+
+        function createNewBoard() {
+            // Clear current state for new board
+            objects = [];
+            deselectAll();
+            zoom = 1;
+            panX = panY = 0;
+            currentInstanceId = null;
+            redrawCanvas();
+            hideInstanceSelector();
+        }
+
+        function deleteStateAndRefresh(instanceId) {
+            if (confirm('Are you sure you want to delete this whiteboard? This action cannot be undone.')) {
+                deleteState(instanceId);
+                populateInstanceGrid();
+            }
+        }
+
+        // Auto-save functionality
+        function setupAutoSave() {
+            // Auto-save every 30 seconds if there are changes
+            autoSaveInterval = setInterval(() => {
+                if (objects.length > 0) {
+                    autoSave();
+                }
+            }, 30000);
+
+            // Save on beforeunload
+            window.addEventListener('beforeunload', () => {
+                if (objects.length > 0) {
+                    autoSave();
+                }
+            });
+
+            // Auto-save after drawing operations
+            let lastDrawTime = 0;
+            const originalRedrawCanvas = redrawCanvas;
+            redrawCanvas = function() {
+                originalRedrawCanvas();
+                const now = Date.now();
+                if (now - lastDrawTime > 2000) { // Only save if 2 seconds have passed
+                    lastDrawTime = now;
+                    setTimeout(() => {
+                        if (objects.length > 0) {
+                            autoSave();
+                        }
+                    }, 1000);
+                }
+            };
+        }
+
         // Event listeners
         canvas.addEventListener('mousedown', (e) => {
             if (e.button === 1 || (e.button === 0 && e.altKey)) { // Middle mouse or Alt+click for pan
@@ -866,7 +1302,7 @@
                 return; // Don't interfere with text input
             }
 
-            if (e.ctrlKey || e.metaCmd) {
+            if (e.ctrlKey || e.metaKey) {
                 switch(e.key.toLowerCase()) {
                     case 'z':
                         e.preventDefault();
@@ -886,6 +1322,12 @@
                         zoom = 1;
                         panX = panY = 0;
                         redrawCanvas();
+                        break;
+                    case 'n':
+                        if (e.shiftKey) {
+                            e.preventDefault();
+                            createNewInstance();
+                        }
                         break;
                 }
                 return;
@@ -973,12 +1415,30 @@
         });
 
         // Initialize
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-        setTool('pen');
+        function initializeApp() {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            setTool('pen');
 
-        // Prevent context menu on right click
-        canvas.addEventListener('contextmenu', e => e.preventDefault());
+            // Setup auto-save
+            setupAutoSave();
+
+            // Show instance selector if there are saved states
+            const savedStates = getSavedStates();
+            if (Object.keys(savedStates).length > 0) {
+                showInstanceSelector();
+            }
+
+            // Prevent context menu on right click
+            canvas.addEventListener('contextmenu', e => e.preventDefault());
+        }
+
+        // Start the application
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
     </script>
 </body>
 </html>

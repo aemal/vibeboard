@@ -1,17 +1,23 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
+let windowCount = 0;
+
 function createWindow() {
+  windowCount++;
+
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
     },
     frame: false,
     fullscreen: true,
-    show: false
+    show: false,
+    title: `Whiteboard ${windowCount}`
   });
 
   win.loadFile('index.html');
@@ -21,14 +27,21 @@ function createWindow() {
     win.focus();
   });
 
-  win.webContents.on('before-input-event', (event, input) => {
-    if (input.key === 'Escape') {
-      app.quit();
-    }
+  win.on('closed', () => {
+    // Window cleanup handled automatically
   });
+
+  return win;
 }
 
-app.whenReady().then(createWindow);
+// Handle new window creation from renderer
+ipcMain.handle('create-new-window', () => {
+  createWindow();
+});
+
+app.whenReady().then(() => {
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
